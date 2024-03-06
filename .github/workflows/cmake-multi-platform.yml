@@ -67,3 +67,17 @@ jobs:
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v4.3.1
+      with:
+        # Artifact name
+        name: ${{ matrix.build_type }}
+        # A file, directory or wildcard pattern that describes what to upload
+        path: ${{ github.workspace }}/build
+        # The desired behavior if no files are found using the provided path.    
+        if-no-files-found: warn
+        retention-days: 90
+        compression-level: 9
+        overwrite: true
+          
