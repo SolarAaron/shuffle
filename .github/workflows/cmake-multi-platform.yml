@@ -72,9 +72,9 @@ jobs:
       uses: actions/upload-artifact@v4.3.1
       with:
         # Artifact name
-        name: ${{ matrix.build_type }}
+        name: ${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.c_compiler }}
         # A file, directory or wildcard pattern that describes what to upload
-        path: ${{ github.workspace }}/build
+        path: ${{ steps.strings.outputs.build-output-dir }}
         # The desired behavior if no files are found using the provided path.    
         if-no-files-found: warn
         retention-days: 90
