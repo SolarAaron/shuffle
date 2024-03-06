@@ -43,11 +43,6 @@ int main(int argc, char** argv){
 		std::cout << hexHash << "  " << arg << std::endl;
 		delete[] hexHash;
 		
-		/*
-		auto hash = slr::crypto::hashBlock<HASH_SIGNATURE>(buf.size(), buf.c_str());
-		std::cout << slr::crypto::finishHash(hash) << "  " << arg << std::endl;
-		*/
-		
 		current ++;
 	} while(current < argc);
 	return 0;

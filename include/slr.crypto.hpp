@@ -178,7 +178,7 @@ namespace slr{
 		 * Converts the bitset holding the hash into a std::string of hex characters
 		 * */
 		template<size_t S> std::string finishHash(std::bitset<S>* const block){
-			std::string ret;
+            std::vector<char> ret_v;
 			
 			for(size_t pos = S; pos > 0; pos -= 8){
 				std::stringstream buf;
@@ -188,21 +188,21 @@ namespace slr{
 				}
 				buf << std::hex << std::setfill('0') << std::setw(2);
 				buf << bits.to_ulong();
-				ret.append(buf.str());
+                auto str = buf.str();
+                ret_v.insert(ret_v.begin(), str.begin(), str.end());
 			}
-			
-			return ret;
+
+            return std::string(ret_v.begin(), ret_v.end());
 		}
 
         /**
          * Converts the bitset holding the hash into a std::string of base64 characters
          * */
         template<size_t S> std::string finishHash64(std::bitset<S>* const block){
-            std::string ret;
+            std::vector<char> ret_v;
             bool stop = false;
 
             for(size_t pos = S; (pos > 0) && (!stop); pos -= 6){
-                std::stringstream buf;
                 std::bitset<6> bits;
                 for(size_t bit = 6; bit > 0; bit--){
                     if(pos == bit) stop = true;
@@ -217,11 +217,10 @@ namespace slr{
                 else if(bits.to_ulong() == 63) b64char = '/';
                 else b64char = '=';
 
-                buf << b64char;
-                ret.append(buf.str());
+                ret_v.insert(ret_v.begin(), b64char);
             }
 
-            return ret;
+            return std::string(ret_v.begin(), ret_v.end());
         }
 
 		/**
