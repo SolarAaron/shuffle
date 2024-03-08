@@ -3,37 +3,52 @@
 #include <iterator>
 #include <string>
 #include <cstring>
+#include "args.hpp"
 #include "slr.crypto.hpp"
 
 int main(int argc, char** argv){
-    std::string buf;
-    int current = 1;
+    std::string buf, keybuf;
 
-    if(argc == 1){
-        std::cerr << "Usage: " << argv[0] << " file(s)" << std::endl;
+    auto args = Args().parse(argc, argv);
+
+    if(args.file_names.empty()){
+        std::cerr << "Usage: " << argv[0] <<" [-k keyfile] file(s)" << std::endl;
     } else {
         std::fstream rnd;
-        std::istreambuf_iterator<char> rit;
+        std::istreambuf_iterator<char> rit, kit, eos;
         rit = std::istreambuf_iterator<char>(rnd.rdbuf());
         rnd.open("/dev/random", std::fstream::in | std::fstream::binary);
-        do{
-            auto password = new char[256];
+
+        if(args.use_keyfile){
+            std::fstream kst;
+            kit = std::istreambuf_iterator<char>(kst.rdbuf());
+            kst.open(args.keyfile_name, std::fstream::in | std::fstream::binary);
+            while(kit != eos){
+                keybuf += *kit++;
+            }
+            kst.close();
+        }
+
+        for(auto fname: args.file_names) {
+            char* password;
             auto prevBlock = new char[BLOCK_SIZE], block = new char[BLOCK_SIZE];
 
-            std::istreambuf_iterator<char> eos;
             std::istreambuf_iterator<char> iit;
             std::string arg;
             std::fstream file;
             std::fstream outfile;
 
-            file.open(argv[current], std::fstream::in | std::fstream::binary);
-            outfile.open(std::string(argv[current]) + ".sfl", std::fstream::out | std::fstream::binary);
+            file.open(fname, std::fstream::in | std::fstream::binary);
+            outfile.open(std::string(fname) + ".sfl", std::fstream::out | std::fstream::binary);
 
             iit = std::istreambuf_iterator<char>(file.rdbuf());
-            arg = argv[current];
+            arg = fname;
 
-            std::cout << "Password for file " << arg << ": " << std::flush;
-            std::cin >> password;
+            if(!args.use_keyfile){
+                password = new char[256];
+                std::cout << "Password for file " << arg << ": " << std::flush;
+                std::cin >> password;
+            }
 
             for(size_t b = 0; b < BLOCK_SIZE; b++){
                 block[b] = *rit++;
@@ -46,7 +61,10 @@ int main(int argc, char** argv){
             }
             std::cout << std::endl;
 
-            auto crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(strlen(password), password, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
+            auto keylen = args.use_keyfile ? keybuf.size() : strlen(password);
+            auto key = args.use_keyfile ? keybuf.data() : password;
+
+            auto crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
             memcpy(prevBlock, crypted.data(), crypted.size());
             outfile.write(prevBlock, BLOCK_SIZE);
             outfile.flush();
@@ -56,7 +74,7 @@ int main(int argc, char** argv){
 
                 if(buf.size() == BLOCK_SIZE){
                     memcpy(block, buf.data(), BLOCK_SIZE);
-                    crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(strlen(password), password, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
+                    crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
                     memcpy(prevBlock, crypted.data(), crypted.size());
                     outfile.write(prevBlock, BLOCK_SIZE);
                     outfile.flush();
@@ -65,10 +83,10 @@ int main(int argc, char** argv){
             }
 
             if(!buf.empty()){
-                crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(strlen(password), password, BLOCK_SIZE, prevBlock, BLOCK_SIZE, prevBlock);
+                crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, prevBlock);
                 memcpy(block, crypted.data(), crypted.size());
                 memcpy(block, buf.data(), buf.size());
-                crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(strlen(password), password, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
+                crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
                 memcpy(prevBlock, crypted.data(), crypted.size());
                 outfile.write(prevBlock, BLOCK_SIZE);
                 outfile.flush();
@@ -82,10 +100,11 @@ int main(int argc, char** argv){
                 outfile.close();
             }
 
-            memset(password, 0, 256);
-            delete[] password;
-            current++;
-        } while(current < argc);
+            if(!args.use_keyfile){
+                memset(password, 0, 256);
+                delete[] password;
+            }
+        }
 
         if(rnd.is_open()){
             rnd.close();
