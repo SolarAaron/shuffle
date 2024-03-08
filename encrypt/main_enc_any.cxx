@@ -40,9 +40,9 @@ int main(int argc, char** argv){
             }
 
             //IV
-            std::cout << std::hex << std::setfill('0') << std::setw(2) << "IV Signature:";
+            std::cout << "IV Signature:";
             for(size_t sigX = 0; sigX < BLOCK_SIZE; sigX++){
-                std::cout << ' ' << (((uint16_t)block[sigX]) & 255);
+                std::cout << ' ' << std::hex << std::setfill('0') << std::setw(2) << (((uint16_t) block[sigX]) & 255);
             }
             std::cout << std::endl;
 

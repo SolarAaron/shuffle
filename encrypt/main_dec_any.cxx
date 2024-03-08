@@ -37,9 +37,9 @@ int main(int argc, char** argv){
 
             //IV
             auto decrypted = slr::crypto::shuffleDecrypt<CIPHER_DEFINITION>(strlen(password), password, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
-            std::cout << std::hex << std::setfill('0') << std::setw(2) << "IV Signature:";
+            std::cout << "IV Signature:";
             for(auto sigB: decrypted){
-                std::cout << ' ' << (((uint16_t)sigB) & 255);
+                std::cout << ' ' << std::hex << std::setfill('0') << std::setw(2) << (((uint16_t) sigB) & 255);
             }
             std::cout << std::endl;
             memcpy(prevBlock, block, BLOCK_SIZE);
