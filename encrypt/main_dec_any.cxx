@@ -21,12 +21,14 @@ int main(int argc, char** argv){
 
         if(args.use_keyfile){
             std::fstream kst;
-            kit = std::istreambuf_iterator<char>(kst.rdbuf());
-            kst.open(args.keyfile_name, std::fstream::in | std::fstream::binary);
-            while(kit != eos){
-                keybuf += *kit++;
+            for(const auto& keyfile_name: args.keyfile_names) {
+                kit = std::istreambuf_iterator<char>(kst.rdbuf());
+                kst.open(keyfile_name, std::fstream::in | std::fstream::binary);
+                while(kit != eos) {
+                    keybuf += *kit++;
+                }
+                kst.close();
             }
-            kst.close();
         }
 
         for(auto fname: args.file_names) {
@@ -57,8 +59,12 @@ int main(int argc, char** argv){
                 block[b] = *iit++;
             }
 
+            size_t iterations = args.iterations == 0 ? slr::crypto::SC<HASH_DEFINITION>::value8 : args.iterations;
+
             //IV
-            auto decrypted = slr::crypto::shuffleDecrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
+            auto decrypted =
+                slr::crypto::shuffleDecrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block,
+                                                               iterations);
             std::cout << "IV Signature:";
             for(auto sigB: decrypted){
                 std::cout << ' ' << std::hex << std::setfill('0') << std::setw(2) << (((uint16_t) sigB) & 255);
@@ -71,7 +77,9 @@ int main(int argc, char** argv){
 
                 if(buf.size() == BLOCK_SIZE){
                     memcpy(block, buf.data(), BLOCK_SIZE);
-                    decrypted = slr::crypto::shuffleDecrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
+                    decrypted =
+                        slr::crypto::shuffleDecrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE,
+                                                                       block, iterations);
 
                     if(iit == eos){
                         break;
@@ -85,7 +93,9 @@ int main(int argc, char** argv){
             }
 
             if(!buf.empty()){
-                auto crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock,BLOCK_SIZE, prevBlock);
+                auto crypted =
+                    slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE,
+                                                                   prevBlock, iterations);
                 size_t limit = BLOCK_SIZE;
                 while(crypted[limit - 1] == decrypted[limit - 1]) limit--;
                 outfile.write(reinterpret_cast<const char*>(decrypted.data()), limit);

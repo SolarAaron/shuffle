@@ -7,7 +7,8 @@
 class Args{
 public:
     std::vector<std::string> file_names;
-    std::string keyfile_name;
+    std::vector<std::string> keyfile_names;
+    size_t iterations;
     bool use_keyfile;
     Args& parse(int argc, char** argv);
 };

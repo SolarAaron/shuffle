@@ -21,12 +21,14 @@ int main(int argc, char** argv){
 
         if(args.use_keyfile){
             std::fstream kst;
-            kit = std::istreambuf_iterator<char>(kst.rdbuf());
-            kst.open(args.keyfile_name, std::fstream::in | std::fstream::binary);
-            while(kit != eos){
-                keybuf += *kit++;
+            for(const auto& keyfile_name: args.keyfile_names) {
+                kit = std::istreambuf_iterator<char>(kst.rdbuf());
+                kst.open(keyfile_name, std::fstream::in | std::fstream::binary);
+                while(kit != eos) {
+                    keybuf += *kit++;
+                }
+                kst.close();
             }
-            kst.close();
         }
 
         for(auto fname: args.file_names) {
@@ -54,6 +56,8 @@ int main(int argc, char** argv){
                 block[b] = *rit++;
             }
 
+            size_t iterations = args.iterations == 0 ? slr::crypto::SC<HASH_DEFINITION>::value8 : args.iterations;
+
             //IV
             std::cout << "IV Signature:";
             for(size_t sigX = 0; sigX < BLOCK_SIZE; sigX++){
@@ -63,8 +67,9 @@ int main(int argc, char** argv){
 
             auto keylen = args.use_keyfile ? keybuf.size() : strlen(password);
             auto key = args.use_keyfile ? keybuf.data() : password;
-
-            auto crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
+            auto crypted =
+                slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block,
+                                                               iterations);
             memcpy(prevBlock, crypted.data(), crypted.size());
             outfile.write(prevBlock, BLOCK_SIZE);
             outfile.flush();
@@ -74,7 +79,9 @@ int main(int argc, char** argv){
 
                 if(buf.size() == BLOCK_SIZE){
                     memcpy(block, buf.data(), BLOCK_SIZE);
-                    crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
+                    crypted =
+                        slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE,
+                                                                       block, iterations);
                     memcpy(prevBlock, crypted.data(), crypted.size());
                     outfile.write(prevBlock, BLOCK_SIZE);
                     outfile.flush();
@@ -83,10 +90,12 @@ int main(int argc, char** argv){
             }
 
             if(!buf.empty()){
-                crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, prevBlock);
+                crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE,
+                                                                         prevBlock, iterations);
                 memcpy(block, crypted.data(), crypted.size());
                 memcpy(block, buf.data(), buf.size());
-                crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE, block);
+                crypted = slr::crypto::shuffleEncrypt<CIPHER_DEFINITION>(keylen, key, BLOCK_SIZE, prevBlock, BLOCK_SIZE,
+                                                                         block, iterations);
                 memcpy(prevBlock, crypted.data(), crypted.size());
                 outfile.write(prevBlock, BLOCK_SIZE);
                 outfile.flush();

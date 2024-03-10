@@ -360,12 +360,15 @@ namespace slr{
             return result;
         }
 
-        template<size_t BSize, size_t... X> std::vector<uint8_t> shuffleEncrypt(size_t passLength, char const* passBuffer, size_t saltLength, char const* saltBuffer, size_t length, char const* buffer){
+        template<size_t BSize, size_t... X> std::vector<uint8_t>
+        shuffleEncrypt(size_t passLength, char const* passBuffer, size_t saltLength, char const* saltBuffer,
+                       size_t length, char const* buffer, size_t iterations) {
             std::bitset<BSize * 8> blockBits;
             std::vector<uint8_t> blockBytes;
             std::vector<uint8_t> shuffleSub;
             auto key = hashBlock<X...>(passLength, passBuffer);
-            auto roundBytes = pbkdf2<BSize, X...>(passLength, passBuffer, saltLength, saltBuffer, SC<X...>::value8, BSize * key->size());
+            auto roundBytes =
+                pbkdf2<BSize, X...>(passLength, passBuffer, saltLength, saltBuffer, iterations, BSize * key->size());
 
             for(size_t sub = 0; sub < (1 << (sizeof(uint8_t) * CHAR_BIT)); sub++)
                 shuffleSub.push_back(sub);
@@ -410,12 +413,15 @@ namespace slr{
             return blockBytes;
         }
 
-        template<size_t BSize, size_t... X> std::vector<uint8_t> shuffleDecrypt(size_t passLength, char const* passBuffer, size_t saltLength, char const* saltBuffer, size_t length, char const* buffer){
+        template<size_t BSize, size_t... X> std::vector<uint8_t>
+        shuffleDecrypt(size_t passLength, char const* passBuffer, size_t saltLength, char const* saltBuffer,
+                       size_t length, char const* buffer, size_t iterations) {
             std::bitset<BSize * 8> blockBits;
             std::vector<uint8_t> blockBytes;
             std::vector<uint8_t> shuffleSub;
             auto key = hashBlock<X...>(passLength, passBuffer);
-            auto roundBytes = pbkdf2<BSize, X...>(passLength, passBuffer, saltLength, saltBuffer, SC<X...>::value8, BSize * key->size());
+            auto roundBytes =
+                pbkdf2<BSize, X...>(passLength, passBuffer, saltLength, saltBuffer, iterations, BSize * key->size());
 
             for(size_t sub = 0; sub < (1 << (sizeof(uint8_t) * CHAR_BIT)); sub++)
                 shuffleSub.push_back(sub);
