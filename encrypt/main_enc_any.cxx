@@ -59,11 +59,14 @@ int main(int argc, char** argv){
             size_t iterations = args.iterations == 0 ? slr::crypto::SC<HASH_DEFINITION>::value8 : args.iterations;
 
             //IV
-            std::cout << "IV Signature:";
-            for(size_t sigX = 0; sigX < BLOCK_SIZE; sigX++){
-                std::cout << ' ' << std::hex << std::setfill('0') << std::setw(2) << (((uint16_t) block[sigX]) & 255);
+            if(args.verbosity >= 1) {
+                std::cout << "IV Signature:";
+                for(size_t sigX = 0; sigX < BLOCK_SIZE; sigX++) {
+                    std::cout << ' ' << std::hex << std::setfill('0') << std::setw(2)
+                              << (((uint16_t) block[sigX]) & 255);
+                }
+                std::cout << std::endl;
             }
-            std::cout << std::endl;
 
             auto keylen = args.use_keyfile ? keybuf.size() : strlen(password);
             auto key = args.use_keyfile ? keybuf.data() : password;

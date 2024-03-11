@@ -8,6 +8,8 @@ Args& Args::parse(int argc, char** argv){
             use_keyfile = true;
         } else if(std::string(argv[arg]) == "-i") {
             nextIsIter = true;
+        } else if(std::string(argv[arg]) == "-v") {
+            verbosity++;
         }else if(nextIsKey){
             keyfile_names.emplace_back(argv[arg]);
             nextIsKey = false;
@@ -22,3 +24,5 @@ Args& Args::parse(int argc, char** argv){
     return *this;
 }
 
+Args::Args(): file_names(), keyfile_names(), verbosity(0), iterations(0), use_keyfile(false) {
+}
