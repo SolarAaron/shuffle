@@ -10,11 +10,14 @@ else ()
     option(BUILD_SHARED_LIBS "Build the shared library" ON)
 endif ()
 include_directories("${PROJECT_SOURCE_DIR}/include")
+
+install(FILES include/crypto_c.h include/slr.crypto.hpp DESTINATION include)
+
 set(CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}/build)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
-list(APPEND PRIMES 2 3 5 7 11 13)
+list(APPEND PRIMES 2 3 5 7 11 13 17)
 
 foreach(PRIME ${PRIMES})
     foreach(VAR ${VARIANTS})

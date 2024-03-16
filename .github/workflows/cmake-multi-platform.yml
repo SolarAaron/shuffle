@@ -24,7 +24,7 @@ jobs:
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
         os: [ubuntu-latest, windows-latest]
-        build_type: [Release]
+        build_type: [ Release, Debug ]
         c_compiler: [gcc, clang, cl]
         include:
           - os: windows-latest
@@ -68,13 +68,17 @@ jobs:
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
+    - name: Image
+      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --prefix ${{ github.workspace }}/image --config ${{ matrix.build_type }}
+
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
       with:
         # Artifact name
         name: shuffle-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.c_compiler }}
         # A file, directory or wildcard pattern that describes what to upload
-        path: ${{ steps.strings.outputs.build-output-dir }}/build
+        path: ${{ github.workspace }}/image
         # The desired behavior if no files are found using the provided path.    
         if-no-files-found: warn
         retention-days: 90

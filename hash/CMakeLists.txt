@@ -1,4 +1,5 @@
 add_library(slrcrypto_c crypto.cxx)
+install(TARGETS slrcrypto_c)
 
 foreach(VARIANT ${VARIANTS})
     string(REPLACE _ , V_HASH ${VARIANT})
@@ -9,10 +10,12 @@ foreach(VARIANT ${VARIANTS})
     target_link_libraries(slrcrypto_c hash_def_${VARIANT})
 
     add_executable(poker-${VARIANT} main_any.cxx)
+    install(TARGETS poker-${VARIANT})
     target_compile_definitions(poker-${VARIANT} PUBLIC HASH_SIGNATURE=${VARIANT})
     target_link_libraries(poker-${VARIANT} slrcrypto_c)
 
     add_executable(poker64-${VARIANT} main64_any.cxx)
+    install(TARGETS poker64-${VARIANT})
     target_compile_definitions(poker64-${VARIANT} PUBLIC HASH_SIGNATURE=${VARIANT})
     target_link_libraries(poker64-${VARIANT} slrcrypto_c)
 

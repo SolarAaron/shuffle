@@ -5,9 +5,11 @@ foreach(VARIANT ${VARIANTS})
         string(REPLACE _ , V_SPEC ${V_NAME})
 
         add_executable(shuffle-${V_NAME} main_enc_any.cxx args.cxx)
+        install(TARGETS shuffle-${V_NAME})
         target_compile_definitions(shuffle-${V_NAME} PUBLIC BLOCK_SIZE=${BSIZE} CIPHER_DEFINITION=${V_SPEC} HASH_DEFINITION=${V_HASH})
 
         add_executable(deshuffle-${V_NAME} main_dec_any.cxx args.cxx)
+        install(TARGETS deshuffle-${V_NAME})
         target_compile_definitions(deshuffle-${V_NAME} PUBLIC BLOCK_SIZE=${BSIZE} CIPHER_DEFINITION=${V_SPEC} HASH_DEFINITION=${V_HASH})
     endforeach ()
 endforeach ()
