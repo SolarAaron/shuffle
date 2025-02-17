@@ -173,18 +173,33 @@ namespace slr{
 			name << SC<X...>::value;
 			return hashBlock<X...>(length, buffer, hashBlock<X...>(name.str().size(),name.str().c_str(),initial));
 		}
+
+		template<size_t S, size_t T> std::bitset<T>* const truncate(std::bitset<S>* const original) {
+	        auto ret = new std::bitset<T>();
+
+        	size_t offset = original->count();
+        	for (size_t bit = 0; bit < T; bit++) {
+        		(*ret)[bit] = (*original)[(offset * bit) % S];
+        	}
+
+        	return ret;
+        }
 		
 		/**
 		 * Converts the bitset holding the hash into a std::string of hex characters
 		 * */
 		template<size_t S> std::string finishHash(std::bitset<S>* const block){
             std::vector<char> ret_v;
-			
-			for(size_t pos = S; pos > 0; pos -= 8){
+			size_t count;
+			for(size_t pos = S; pos > 0; pos -= count){
+				count = 0;
 				std::stringstream buf;
 				std::bitset<8> bits;
 				for(size_t bit = 8; bit > 0; bit--){
-					bits[8 - bit] = (*block)[pos - bit];
+					if (pos >= bit) {
+						bits[8 - bit] = (*block)[pos - bit];
+						++count;
+					}
 				}
 				buf << std::hex << std::setfill('0') << std::setw(2);
 				buf << bits.to_ulong();
@@ -201,7 +216,7 @@ namespace slr{
         template<size_t S> std::string finishHash64(std::bitset<S>* const block){
             std::vector<char> ret_v;
             bool stop = false;
-
+        	size_t count;
             for(size_t pos = S; (pos > 0) && (!stop); pos -= 6){
                 std::bitset<6> bits;
                 for(size_t bit = 6; bit > 0; bit--){

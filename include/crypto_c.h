@@ -2,8 +2,31 @@
 #define C_GUARD_SLR_CRYPTO
 
 #include <stddef.h>
+#include <cmath>
 
 #ifdef __cplusplus
+extern "C" {
+#endif
+struct poker_hash_sum {
+    virtual ~poker_hash_sum();
+};
+#ifdef __cplusplus
+}
+#include<slr.crypto.hpp>
+
+//namespace /* unnamed */{
+
+    template<size_t... X>
+    struct poker_hash_impl: poker_hash_sum{
+        std::bitset<slr::crypto::SC<X...>::value8> * hash{};
+        size_t size = (slr::crypto::SC<X...>::value * 2) + 1;
+        size_t size64 = ceil(slr::crypto::SC<X...>::value8 / 6.0) + 1;
+        ~poker_hash_impl() override {
+            delete this->hash;
+        }
+    };
+//}
+
 extern "C" {
 #endif
 #define variant_append(a, b) a##b
@@ -14,10 +37,6 @@ extern "C" {
 #define finish_hash(variant) variant_append(finish_hash_, variant)
 #define get_hash64_size(variant) variant_append(get_hash64_size_, variant)
 #define finish_hash64(variant) variant_append(finish_hash64_, variant)
-
-struct poker_hash_sum {
-    virtual ~poker_hash_sum();
-};
 
 #ifdef HASH_SIGNATURE
 
