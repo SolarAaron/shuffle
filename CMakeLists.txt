@@ -39,7 +39,7 @@ endforeach()
 list(REMOVE_DUPLICATES VARIANTS)
 list(SORT VARIANTS ORDER DESCENDING COMPARE NATURAL)
 
-set(BLOCK_SIZES 8 16 32 64 128 256 512)
+set(BLOCK_SIZES 8 16 32 64 128 256)
 
 add_subdirectory(hash)
 add_subdirectory(encrypt)
