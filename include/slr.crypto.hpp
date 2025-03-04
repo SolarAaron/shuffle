@@ -179,7 +179,7 @@ namespace slr{
 
         	size_t offset = original->count();
         	for (size_t bit = 0; bit < T; bit++) {
-        		(*ret)[bit] = (*original)[(offset * bit) % S];
+        		(*ret)[bit] = (*original)[bit + ((offset * bit) % S)];
         	}
 
         	return ret;
@@ -260,7 +260,9 @@ namespace slr{
 
             if(keyLength > Bs){
                 auto block = hashBlock<X...>(keyLength, keyBuffer);
-                keyBytes = packBitsToBytes(block);
+            	auto t_block = truncate<SC<X...>::value8, Bs * 8>(block);
+                keyBytes = packBitsToBytes(t_block);
+            	delete t_block;
                 delete block;
             } else {
                 keyBytes.resize(keyLength);
