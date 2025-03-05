@@ -48,14 +48,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Get the number of CPUs that the current process has access to.
       id: cpus
-      run: |
-        from os import environ, sched_getaffinity
-  
-        num_cpus = len(sched_getaffinity(0))
-        output_file = environ["GITHUB_OUTPUT"]
-        with open(output_file, "a", encoding="utf-8") as output_stream:
-            output_stream.write(f"count={num_cpus}\n")
-      shell: python
+      uses: SimenB/github-actions-cpu-cores@v2
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
