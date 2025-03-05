@@ -7,13 +7,13 @@
 int main(int argc, char** argv){
 	std::string buf;
 	int current = 1;
-	do{
+	do {
 		std::istreambuf_iterator<char> eos;
 		std::istreambuf_iterator<char> iit;
 		std::string arg;
 		std::fstream file;
-		
-		if(argc == 1){
+
+		if(argc == 1) {
 			iit = std::istreambuf_iterator<char>(std::cin.rdbuf());
 			arg = "-";
 		} else {

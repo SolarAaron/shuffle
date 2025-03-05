@@ -12,40 +12,42 @@
 #include <climits>
 
 namespace slr{
-	namespace crypto{
-		namespace /* unnamed */{
-			template<typename T> constexpr T htonT (T value) noexcept {
-			#if __BYTE_ORDER == __LITTLE_ENDIAN
-			  char* ptr = reinterpret_cast<char*>(&value);
-			  std::reverse (ptr, ptr + sizeof(T));
-			#endif
-			  return value;
-			}
-			
-			template<size_t S, size_t... X> struct SC{
-				enum{
-					value = S*S * SC<X...>::value,
-					value8 = 8*S*S * SC<X...>::value
-				};
-			};
-			
-			template<size_t S> struct SC<S>{
-				enum{
-					value = S*S,
-					value8 = 8*S*S
-				};
-			};
-		}
-		
-		template<size_t S, size_t Bs, size_t Ks, size_t Kd = 1, size_t... X> class bitFiddler{
-			public:
-			/**
-			 * Re-splits the bitsets at src and passes them to the next iteration as specified in ...X
-			 * it should hold that B*K*K = S*8
-			 * The first pass may be B = S*8, K = 1, but the bitset in src must not be the same instance as sink
-			 * */
-			static void bitwisePass(std::bitset<S*8>* const sink, std::array<std::bitset<Bs>, Ks*Ks>* const src){
-				std::array<std::bitset<(S*8)/(Kd*Kd)>, Kd*Kd> step;
+    namespace crypto {
+        namespace /* unnamed */ {
+            template<typename T> constexpr T
+            htonT(T value) noexcept {
+                #if __BYTE_ORDER == __LITTLE_ENDIAN
+                char* ptr = reinterpret_cast<char*>(&value);
+                std::reverse(ptr, ptr + sizeof(T));
+                #endif
+                return value;
+            }
+
+            template<size_t S, size_t... X> struct SC {
+                enum {
+                    value = S * S * SC<X...>::value,
+                    value8 = 8 * S * S * SC<X...>::value
+                };
+            };
+
+            template<size_t S> struct SC<S> {
+                enum {
+                    value = S * S,
+                    value8 = 8 * S * S
+                };
+            };
+        }
+
+        template<size_t S, size_t Bs, size_t Ks, size_t Kd = 1, size_t... X> class bitFiddler {
+        public:
+            /**
+             * Re-splits the bitsets at src and passes them to the next iteration as specified in ...X
+             * it should hold that B*K*K = S*8
+             * The first pass may be B = S*8, K = 1, but the bitset in src must not be the same instance as sink
+             * */
+            static void
+            bitwisePass(std::bitset<S * 8>* const sink, std::array<std::bitset<Bs>, Ks * Ks>* const src) {
+                std::array<std::bitset<(S * 8) / (Kd * Kd)>, Kd * Kd> step;
 
                 size_t dest = 0;
 
@@ -59,35 +61,36 @@ namespace slr{
                     std::array<std::bitset<(S*8)/(Kd*Kd)>, 1> inner = {step.at(dest % step.size())};
                     bitFiddler<S/(Kd*Kd), (S*8)/(Kd*Kd), 1, X...>::bitwisePass(&step.at(dest % step.size()), &inner);
                 }
-				
-				// next iteration
-				bitFiddler<S, (S*8)/(Kd*Kd), Kd, X...>::bitwisePass(sink, &step);
-			}
-		};
-		
-		template<size_t S, size_t Bs, size_t Ks, size_t Kd> class bitFiddler<S, Bs, Ks, Kd>{
-			public:
-			/**
-			 * Joins the bitsets at src into sink, as a final step after the D split
-			 * it should hold that B*K*K = S*8
-			 * */
-			static void bitwisePass(std::bitset<S*8>* const sink, std::array<std::bitset<Bs>, Ks*Ks>* const src) {
-				std::array<std::bitset<(S*8)/(Kd*Kd)>, Kd*Kd> step;
 
-				size_t dest = 0;
+                // next iteration
+                bitFiddler<S, (S * 8) / (Kd * Kd), Kd, X...>::bitwisePass(sink, &step);
+            }
+        };
 
-				for(auto it = src->cbegin(); it < src->cend(); ++it){
+        template<size_t S, size_t Bs, size_t Ks, size_t Kd> class bitFiddler<S, Bs, Ks, Kd> {
+        public:
+            /**
+             * Joins the bitsets at src into sink, as a final step after the D split
+             * it should hold that B*K*K = S*8
+             * */
+            static void
+            bitwisePass(std::bitset<S * 8>* const sink, std::array<std::bitset<Bs>, Ks * Ks>* const src) {
+                std::array<std::bitset<(S * 8) / (Kd * Kd)>, Kd * Kd> step;
+
+                size_t dest = 0;
+
+                for(auto it = src->cbegin(); it < src->cend(); ++it){
                     for(size_t bit = 0; bit < it->size(); bit++){
                         step.at(dest % step.size()) <<= 1;
                         step.at(dest % step.size())[0] = (*it)[(it->size() - 1) - bit];
                         dest++;
                     }
-				}
+                }
 
-				for(; dest < S*8; dest++){
-					step.at(dest / ((S*8)/(Kd*Kd))) <<= 1;
-					step.at(dest / ((S*8)/(Kd*Kd)))[0] = src->at(dest / Bs)[dest % Bs];
-				}
+                for(; dest < S * 8; dest++) {
+                    step.at(dest / ((S * 8) / (Kd * Kd))) <<= 1;
+                    step.at(dest / ((S * 8) / (Kd * Kd)))[0] = src->at(dest / Bs)[dest % Bs];
+                }
 
                 for(auto it = step.cbegin() ; it != step.cend(); ++it){
                     for(size_t bit = 0; bit < it->size(); bit++){
@@ -95,8 +98,8 @@ namespace slr{
                         (*sink)[0] = (*it)[(it->size() - 1) - bit];
                     }
                 }
-			}
-		};
+            }
+        };
 
         template<size_t X, size_t R> std::bitset<R> bit_subset(const std::bitset<X>& bits, size_t offset){
             std::bitset<R> result;
@@ -107,108 +110,109 @@ namespace slr{
 
             return result;
         }
-		
-		/**
-		 * Continues a hash from a mid-state with a new block of data
-		 * */
-		template<size_t... X> std::bitset<SC<X...>::value8>* const hashBlock(size_t length, char const* buffer, std::bitset<SC<X...>::value8>* const running){
-			if(buffer) for(size_t i = 0; i < length; i++){
-				uint8_t byte = buffer[i];
-                std::bitset<8> explodedByte = std::bitset<8>(byte);
-				for(size_t bit = 0; bit < explodedByte.size(); bit++){
-                    std::bitset<SC<X...>::value8> bitwise_f = *running;
-                    std::bitset<SC<X...>::value8> bitwise_b = *running;
-                    std::array<std::bitset<SC<X...>::value8>, 1> src;
-					
-					// shuffle current hash
-					src[0] = std::bitset<SC<X...>::value8>(running->to_string());
-                    bitFiddler<SC<X...>::value, SC<X...>::value8, 1, X...>::bitwisePass(&bitwise_f, &src);
-                    bitFiddler<SC<X...>::value, SC<X...>::value8, 1, X...>::bitwisePass(&bitwise_b, &src);
 
-					// hash pass 1 -- shift current bit forward into first position and shuffle
-					bitwise_f <<= 1;
-					bitwise_f[0] = explodedByte[bit];
+        /**
+         * Continues a hash from a mid-state with a new block of data
+         * */
+        template<size_t... X> std::bitset<SC<X...>::value8>* const hashBlock(size_t length, char const* buffer, std::bitset<SC<X...>::value8>* const running) {
+            if(buffer)
+                for(size_t i = 0; i < length; i++) {
+                    uint8_t byte = buffer[i];
+                    std::bitset<8> explodedByte = std::bitset<8>(byte);
+                    for(size_t bit = 0; bit < explodedByte.size(); bit++) {
+                        std::bitset<SC<X...>::value8> bitwise_f = *running;
+                        std::bitset<SC<X...>::value8> bitwise_b = *running;
+                        std::array<std::bitset<SC<X...>::value8>, 1> src;
 
-					src[0] = std::bitset<SC<X...>::value8>(bitwise_f.to_string());
-					bitFiddler<SC<X...>::value, SC<X...>::value8, 1, X...>::bitwisePass(&bitwise_f, &src);
+                        // shuffle current hash
+                        src[0] = std::bitset<SC<X...>::value8>(running->to_string());
+                        bitFiddler<SC<X...>::value, SC<X...>::value8, 1, X...>::bitwisePass(&bitwise_f, &src);
+                        bitFiddler<SC<X...>::value, SC<X...>::value8, 1, X...>::bitwisePass(&bitwise_b, &src);
 
-					// hash pass 2 -- shift current bit backward into last position and shuffle
-					bitwise_b >>= 1;
-					bitwise_b[ (SC<X...>::value8) - 1] = explodedByte[ (explodedByte.size() - 1) - bit ];
+                        // hash pass 1 -- shift current bit forward into first position and shuffle
+                        bitwise_f <<= 1;
+                        bitwise_f[0] = explodedByte[bit];
 
-					src[0] = std::bitset<SC<X...>::value8>(bitwise_b.to_string());
-					bitFiddler<SC<X...>::value, SC<X...>::value8, 1, X...>::bitwisePass(&bitwise_b, &src);
+                        src[0] = std::bitset<SC<X...>::value8>(bitwise_f.to_string());
+                        bitFiddler<SC<X...>::value, SC<X...>::value8, 1, X...>::bitwisePass(&bitwise_f, &src);
 
-					// finally -- add into running hash
-					uint16_t bitsum = 0;
+                        // hash pass 2 -- shift current bit backward into last position and shuffle
+                        bitwise_b >>= 1;
+                        bitwise_b[(SC<X...>::value8) - 1] = explodedByte[(explodedByte.size() - 1) - bit];
 
-                    for(size_t x = 0; x < (SC<X...>::value8); x+=8){
-						uint16_t a = bit_subset<SC<X...>::value8, 8>(*running, x).to_ulong(),
-                        b = bit_subset<SC<X...>::value8, 8>(bitwise_f, x).to_ulong(),
-                        c = bit_subset<SC<X...>::value8, 8>(bitwise_b, x).to_ulong();
-                        bitsum += a;
-                        bitsum += b;
-                        bitsum += c;
-						auto cur = std::bitset<8>(bitsum);
-                        for(size_t bx = 0; bx < 8; bx++)
-						    (*running)[x + bx] = cur[bx];
-						bitsum >>= 8;
-					}
-				}
-			}
-			return running;
-		}
-		
-		/**
-		 * Starts a new hash with an initial block of data
-		 * 
-		 * The bitset returned must be deleted when no longer needed
-		 * */
-		template<size_t... X> std::bitset<SC<X...>::value8>* const hashBlock(size_t length, char const* buffer){
-			std::bitset<SC<X...>::value8>* initial = new std::bitset<SC<X...>::value8>();
-			std::stringstream name;
-			name << std::hex;
-			using ilst = int[];
-			(void) ilst {0, ( (void)(name << X << ','), 0 )...};
-			name << SC<X...>::value;
-			return hashBlock<X...>(length, buffer, hashBlock<X...>(name.str().size(),name.str().c_str(),initial));
-		}
+                        src[0] = std::bitset<SC<X...>::value8>(bitwise_b.to_string());
+                        bitFiddler<SC<X...>::value, SC<X...>::value8, 1, X...>::bitwisePass(&bitwise_b, &src);
 
-		template<size_t S, size_t T> std::bitset<T>* const truncate(std::bitset<S>* const original) {
-	        auto ret = new std::bitset<T>();
+                        // finally -- add into running hash
+                        uint16_t bitsum = 0;
 
-        	size_t offset = original->count();
-        	for (size_t bit = 0; bit < T; bit++) {
-        		(*ret)[bit] = (*original)[bit + ((offset * bit) % S)];
-        	}
-
-        	return ret;
+                        for(size_t x = 0; x < (SC<X...>::value8); x += 8) {
+                            uint16_t a = bit_subset<SC<X...>::value8, 8>(*running, x).to_ulong(),
+                                     b = bit_subset<SC<X...>::value8, 8>(bitwise_f, x).to_ulong(),
+                                     c = bit_subset<SC<X...>::value8, 8>(bitwise_b, x).to_ulong();
+                            bitsum += a;
+                            bitsum += b;
+                            bitsum += c;
+                            auto cur = std::bitset<8>(bitsum);
+                            for(size_t bx = 0; bx < 8; bx++) (*running)[x + bx] = cur[bx];
+                            bitsum >>= 8;
+                        }
+                    }
+                }
+            return running;
         }
-		
-		/**
-		 * Converts the bitset holding the hash into a std::string of hex characters
-		 * */
-		template<size_t S> std::string finishHash(std::bitset<S>* const block){
+
+        /**
+         * Starts a new hash with an initial block of data
+         * 
+         * The bitset returned must be deleted when no longer needed
+         * */
+        template<size_t... X> std::bitset<SC<X...>::value8>* const hashBlock(size_t length, char const* buffer) {
+            std::bitset<SC<X...>::value8>* initial = new std::bitset<SC<X...>::value8>();
+            std::stringstream name;
+            name << std::hex;
+            using ilst = int[];
+            (void) ilst{0, ((void) (name << X << ','), 0)...};
+            name << SC<X...>::value;
+            return hashBlock<X...>(length, buffer, hashBlock<X...>(name.str().size(), name.str().c_str(), initial));
+        }
+
+        template<size_t S, size_t T> std::bitset<T>* const truncate(std::bitset<S>* const original) {
+            auto ret = new std::bitset<T>();
+
+            size_t offset = original->count();
+            for(size_t bit = 0; bit < T; bit++) {
+                (*ret)[bit] = (*original)[bit + ((offset * bit) % S)];
+            }
+
+            return ret;
+        }
+
+        /**
+         * Converts the bitset holding the hash into a std::string of hex characters
+         * */
+        template<size_t S> std::string
+        finishHash(std::bitset<S>* const block) {
             std::vector<char> ret_v;
-			size_t count;
-			for(size_t pos = S; pos > 0; pos -= count){
-				count = 0;
-				std::stringstream buf;
-				std::bitset<8> bits;
-				for(size_t bit = 8; bit > 0; bit--){
-					if (pos >= bit) {
-						bits[8 - bit] = (*block)[pos - bit];
-						++count;
-					}
-				}
-				buf << std::hex << std::setfill('0') << std::setw(2);
-				buf << bits.to_ulong();
+            size_t count;
+            for(size_t pos = S; pos > 0; pos -= count) {
+                count = 0;
+                std::stringstream buf;
+                std::bitset<8> bits;
+                for(size_t bit = 8; bit > 0; bit--) {
+                    if(pos >= bit) {
+                        bits[8 - bit] = (*block)[pos - bit];
+                        ++count;
+                    }
+                }
+                buf << std::hex << std::setfill('0') << std::setw(2);
+                buf << bits.to_ulong();
                 auto str = buf.str();
                 ret_v.insert(ret_v.begin(), str.begin(), str.end());
-			}
+            }
 
             return std::string(ret_v.begin(), ret_v.end());
-		}
+        }
 
         /**
          * Converts the bitset holding the hash into a std::string of base64 characters
@@ -216,7 +220,7 @@ namespace slr{
         template<size_t S> std::string finishHash64(std::bitset<S>* const block){
             std::vector<char> ret_v;
             bool stop = false;
-        	size_t count;
+            size_t count;
             for(size_t pos = S; (pos > 0) && (!stop); pos -= 6){
                 std::bitset<6> bits;
                 for(size_t bit = 6; bit > 0; bit--){
@@ -238,31 +242,32 @@ namespace slr{
             return std::string(ret_v.begin(), ret_v.end());
         }
 
-		/**
-		 * Converts the bitset holding the hash into vector of bytes, unsigned
-		 * */
-		template<size_t S> std::vector<uint8_t> packBitsToBytes(std::bitset<S>* const block){
-			std::vector<uint8_t> ret;
+        /**
+         * Converts the bitset holding the hash into vector of bytes, unsigned
+         * */
+        template<size_t S> std::vector<uint8_t>
+        packBitsToBytes(std::bitset<S>* const block) {
+            std::vector<uint8_t> ret;
 
-			for(size_t pos = S; pos > 0; pos -= 8){
-				std::bitset<8> bits;
-				for(size_t bit = 8; bit > 0; bit--){
-					bits[8 - bit] = (*block)[pos - bit];
-				}
-				ret.insert(ret.begin(), bits.to_ulong());
-			}
+            for(size_t pos = S; pos > 0; pos -= 8) {
+                std::bitset<8> bits;
+                for(size_t bit = 8; bit > 0; bit--) {
+                    bits[8 - bit] = (*block)[pos - bit];
+                }
+                ret.insert(ret.begin(), bits.to_ulong());
+            }
 
-			return ret;
-		}
+            return ret;
+        }
 
         template<size_t Bs, size_t... X> std::vector<uint8_t> hmac(size_t keyLength, char const* keyBuffer, size_t msgLength, char const* msgBuffer){
             std::vector<uint8_t> keyBytes;
 
             if(keyLength > Bs){
                 auto block = hashBlock<X...>(keyLength, keyBuffer);
-            	auto t_block = truncate<SC<X...>::value8, Bs * 8>(block);
+                auto t_block = truncate<SC<X...>::value8, Bs * 8>(block);
                 keyBytes = packBitsToBytes(t_block);
-            	delete t_block;
+                delete t_block;
                 delete block;
             } else {
                 keyBytes.resize(keyLength);
@@ -494,6 +499,6 @@ namespace slr{
 
             return blockBytes;
         }
-	}
+    }
 }
 #endif /*GUARD_SLR_CRYPTO*/
