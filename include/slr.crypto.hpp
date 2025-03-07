@@ -265,9 +265,7 @@ namespace slr{
 
             if(keyLength > Bs){
                 auto block = hashBlock<X...>(keyLength, keyBuffer);
-                auto t_block = truncate<SC<X...>::value8, Bs * 8>(block);
-                keyBytes = packBitsToBytes(t_block);
-                delete t_block;
+                keyBytes = packBitsToBytes(block);
                 delete block;
             } else {
                 keyBytes.resize(keyLength);
