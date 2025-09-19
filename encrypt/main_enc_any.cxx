@@ -44,7 +44,8 @@ int main(int argc, char** argv){
             std::fstream outfile;
 
             file.open(fname, std::fstream::in | std::fstream::binary);
-            outfile.open(std::string(fname) + '.' + std::string(CIPHER_NAME) + (default_iterations ? std::string("") : (std::string(".") + std::to_string(iterations))) + ".sfl", std::fstream::out | std::fstream::binary);
+            outfile.open(std::string(fname) + '.' + std::string(CIPHER_NAME) + (default_iterations ? std::string("") : (std::string(".") + std::to_string(iterations))) + ".sfl",
+                         std::fstream::out | std::fstream::binary);
 
             iit = std::istreambuf_iterator<char>(file.rdbuf());
             arg = fname;
