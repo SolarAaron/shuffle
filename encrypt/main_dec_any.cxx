@@ -31,9 +31,11 @@ int main(int argc, char** argv){
             }
         }
 
+        size_t iterations = args.iterations == 0 ? slr::crypto::SC<HASH_DEFINITION>::value8 : args.iterations;
+
         for(auto fname: args.file_names) {
             char* password;
-            auto prevBlock = new char[BLOCK_SIZE], block = new char[BLOCK_SIZE];
+            auto prevBlock = new char[BLOCK_SIZE](), block = new char[BLOCK_SIZE]();
 
             std::istreambuf_iterator<char> iit;
             std::string arg;
@@ -58,8 +60,6 @@ int main(int argc, char** argv){
             for(size_t b = 0; b < BLOCK_SIZE; b++){
                 block[b] = *iit++;
             }
-
-            size_t iterations = args.iterations == 0 ? slr::crypto::SC<HASH_DEFINITION>::value8 : args.iterations;
 
             //IV
             auto decrypted =

@@ -12,7 +12,7 @@ int main(int argc, char** argv){
     auto args = Args().parse(argc, argv);
 
     if(args.file_names.empty()){
-        std::cerr << "Usage: " << argv[0] <<" [-k keyfile] file(s)" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " [-k keyfile] file(s)" << std::endl;
     } else {
         std::fstream rnd;
         std::istreambuf_iterator<char> rit, kit, eos;
@@ -31,9 +31,12 @@ int main(int argc, char** argv){
             }
         }
 
+        bool default_iterations = args.iterations == 0;
+        size_t iterations = args.iterations == 0 ? slr::crypto::SC<HASH_DEFINITION>::value8 : args.iterations;
+
         for(auto fname: args.file_names) {
             char* password;
-            auto prevBlock = new char[BLOCK_SIZE], block = new char[BLOCK_SIZE];
+            auto prevBlock = new char[BLOCK_SIZE](), block = new char[BLOCK_SIZE]();
 
             std::istreambuf_iterator<char> iit;
             std::string arg;
@@ -41,7 +44,7 @@ int main(int argc, char** argv){
             std::fstream outfile;
 
             file.open(fname, std::fstream::in | std::fstream::binary);
-            outfile.open(std::string(fname) + ".sfl", std::fstream::out | std::fstream::binary);
+            outfile.open(std::string(fname) + '.' + std::string(CIPHER_NAME) + (default_iterations ? std::string("") : (std::string(".") + std::to_string(iterations))) + ".sfl", std::fstream::out | std::fstream::binary);
 
             iit = std::istreambuf_iterator<char>(file.rdbuf());
             arg = fname;
@@ -55,8 +58,6 @@ int main(int argc, char** argv){
             for(size_t b = 0; b < BLOCK_SIZE; b++){
                 block[b] = *rit++;
             }
-
-            size_t iterations = args.iterations == 0 ? slr::crypto::SC<HASH_DEFINITION>::value8 : args.iterations;
 
             //IV
             if(args.verbosity >= 1) {

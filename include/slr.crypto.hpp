@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <climits>
+#include <cmath>
 
 namespace slr{
     namespace crypto {
@@ -383,6 +384,7 @@ namespace slr{
         template<size_t BSize, size_t... X> std::vector<uint8_t>
         shuffleEncrypt(size_t passLength, char const* passBuffer, size_t saltLength, char const* saltBuffer,
                        size_t length, char const* buffer, size_t iterations) {
+            size_t sqBSizeM2 = std::sqrt(BSize * 8.0) - 2;
             std::bitset<BSize * 8> blockBits;
             std::vector<uint8_t> blockBytes;
             std::vector<uint8_t> shuffleSub;
@@ -404,7 +406,7 @@ namespace slr{
 
                 if ((*key)[pass]) roundSplit++;
 
-                shuffleSub = shuffleBlock(shuffleSub, (roundSplit % 30) + 2);
+                shuffleSub = shuffleBlock(shuffleSub, (roundSplit % 14) + 2);
 
                 for(size_t bytePos = 0; bytePos < BSize; bytePos++){
                     uint8_t roundByte = roundBytes[(pass * BSize) + bytePos];
@@ -416,7 +418,7 @@ namespace slr{
                     }
                 }
 
-                shuffle = shuffleBlock(shuffle, (roundSplit % (BSize - 2)) + 2);
+                shuffle = shuffleBlock(shuffle, (roundSplit % sqBSizeM2) + 2);
 
                 size_t offset = 0;
 
@@ -436,6 +438,7 @@ namespace slr{
         template<size_t BSize, size_t... X> std::vector<uint8_t>
         shuffleDecrypt(size_t passLength, char const* passBuffer, size_t saltLength, char const* saltBuffer,
                        size_t length, char const* buffer, size_t iterations) {
+            size_t sqBSizeM2 = std::sqrt(BSize * 8.0) - 2;
             std::bitset<BSize * 8> blockBits;
             std::vector<uint8_t> blockBytes;
             std::vector<uint8_t> shuffleSub;
@@ -454,7 +457,7 @@ namespace slr{
 
             for(size_t pass = 0; pass < key->size(); pass++){ // regenerate substitution schedule
                 if ((*key)[pass]) roundSplit++;
-                shuffleSub = shuffleBlock(shuffleSub, (roundSplit % 30) + 2);
+                shuffleSub = shuffleBlock(shuffleSub, (roundSplit % 14) + 2);
             }
 
             for(size_t pass = 0; pass < key->size(); pass++){
@@ -470,7 +473,7 @@ namespace slr{
                     }
                 }
 
-                shuffle = reverseShuffleBlock(shuffle, (roundSplit % (BSize - 2)) + 2);
+                shuffle = reverseShuffleBlock(shuffle, (roundSplit % sqBSizeM2) + 2);
 
                 size_t offset = 0;
 
@@ -489,7 +492,7 @@ namespace slr{
                     blockBytes[bytePos] = (std::distance(shuffleSub.begin(), find_it)) ^ roundByte;
                 }
 
-                shuffleSub = reverseShuffleBlock(shuffleSub, (roundSplit % 30) + 2);
+                shuffleSub = reverseShuffleBlock(shuffleSub, (roundSplit % 14) + 2);
                 if ((*key)[rpass]) roundSplit--;
             }
 
