@@ -11,6 +11,7 @@
 #include <bit>
 #include <bitset>
 #include <iomanip>
+#include <memory>
 #include <ranges>
 #include <stdexcept>
 #include <sstream>
@@ -171,10 +172,10 @@ namespace slr{
          * An entry equal to the bit count denotes an output bit that is always zero.
          */
         template<size_t... X>
-        const std::array<size_t, VariantSize<X...>::value8>& bitwisePermutation() {
+        const std::vector<size_t>& bitwisePermutation() {
             constexpr size_t bitCount = VariantSize<X...>::value8;
-            static const std::array<size_t, bitCount> permutation = [] {
-                std::array<size_t, bitCount> encoded{};
+            static const std::vector<size_t> permutation = [] {
+                std::vector<size_t> encoded(bitCount);
                 std::array<std::bitset<bitCount>, 1> source{};
 
                 size_t labelBits = 0;
@@ -191,7 +192,7 @@ namespace slr{
                     }
                 }
 
-                std::array<size_t, bitCount> result{};
+                std::vector<size_t> result(bitCount);
                 for(size_t output = 0; output < bitCount; ++output) {
                     result[output] = encoded[output] == 0 ? bitCount : encoded[output] - 1;
                 }
@@ -207,19 +208,20 @@ namespace slr{
         };
 
         /** @internal Source-bit mappings for the two shifted permutations in one hash pass. */
-        template<size_t BitCount> struct HashTransitions {
-            std::array<HashBitSource, BitCount> forward;
-            std::array<HashBitSource, BitCount> backward;
+        struct HashTransitions {
+            std::vector<HashBitSource> forward;
+            std::vector<HashBitSource> backward;
         };
 
         /** @internal Precomputes the composed permutation/shift/permutation hash mappings. */
         template<size_t... X>
-        const HashTransitions<VariantSize<X...>::value8>& hashTransitions() {
+        const HashTransitions& hashTransitions() {
             constexpr size_t bitCount = VariantSize<X...>::value8;
             static_assert(VariantSize<X...>::value + 1 <= static_cast<size_t>(UINT32_MAX),
                           "hash state is too large for transition byte indices");
-            static const HashTransitions<bitCount> transitions = [] {
-                HashTransitions<bitCount> result{};
+            static const HashTransitions transitions = [] {
+                HashTransitions result{std::vector<HashBitSource>(bitCount),
+                                       std::vector<HashBitSource>(bitCount)};
                 const auto& permutation = bitwisePermutation<X...>();
                 for(size_t output = 0; output < bitCount; ++output) {
                     const size_t shiftedSource = permutation[output];
@@ -243,18 +245,21 @@ namespace slr{
 
 #ifdef SLR_CRYPTO_AVX2_DISPATCH
         /** SIMD-friendly source bytes and bit shifts for eight-output gathers. */
-        template<size_t BitCount> struct alignas(32) HashVectorTransitions {
-            alignas(32) std::array<uint32_t, BitCount> forwardByte;
-            alignas(32) std::array<uint32_t, BitCount> backwardByte;
-            alignas(32) std::array<uint32_t, BitCount> forwardShift;
-            alignas(32) std::array<uint32_t, BitCount> backwardShift;
+        struct HashVectorTransitions {
+            std::vector<uint32_t> forwardByte;
+            std::vector<uint32_t> backwardByte;
+            std::vector<uint32_t> forwardShift;
+            std::vector<uint32_t> backwardShift;
         };
 
         template<size_t... X>
-        const HashVectorTransitions<VariantSize<X...>::value8>& hashVectorTransitions() {
+        const HashVectorTransitions& hashVectorTransitions() {
             constexpr size_t bitCount = VariantSize<X...>::value8;
-            static const HashVectorTransitions<bitCount> transitions = [] {
-                HashVectorTransitions<bitCount> result{};
+            static const HashVectorTransitions transitions = [] {
+                HashVectorTransitions result{std::vector<uint32_t>(bitCount),
+                                             std::vector<uint32_t>(bitCount),
+                                             std::vector<uint32_t>(bitCount),
+                                             std::vector<uint32_t>(bitCount)};
                 const auto& scalar = hashTransitions<X...>();
                 for(size_t output = 0; output < bitCount; ++output) {
                     result.forwardByte[output] = scalar.forward[output].byte;
@@ -289,7 +294,7 @@ namespace slr{
         template<size_t... X>
         inline void packedHashRound(PackedHashState<X...>& source,
                                     PackedHashState<X...>& destination,
-                                    const HashTransitions<VariantSize<X...>::value8>& transitions,
+                                    const HashTransitions& transitions,
                                     uint8_t injection) {
             constexpr size_t byteCount = VariantSize<X...>::value;
             source[byteCount] = injection & 1U;
@@ -320,7 +325,7 @@ namespace slr{
         inline void packedHashRoundAvx2(
             PackedHashState<X...>& source,
             PackedHashState<X...>& destination,
-            const HashVectorTransitions<VariantSize<X...>::value8>& transitions,
+            const HashVectorTransitions& transitions,
             uint8_t injection) {
             constexpr size_t byteCount = VariantSize<X...>::value;
             source[byteCount] = injection & 1U;
@@ -329,13 +334,13 @@ namespace slr{
             uint16_t bitsum = 0;
             for(size_t destinationByte = 0; destinationByte < byteCount; ++destinationByte) {
                 const size_t output = destinationByte * 8;
-                const __m256i forwardIndices = _mm256_load_si256(
+                const __m256i forwardIndices = _mm256_loadu_si256(
                     reinterpret_cast<const __m256i*>(transitions.forwardByte.data() + output));
-                const __m256i backwardIndices = _mm256_load_si256(
+                const __m256i backwardIndices = _mm256_loadu_si256(
                     reinterpret_cast<const __m256i*>(transitions.backwardByte.data() + output));
-                const __m256i forwardShifts = _mm256_load_si256(
+                const __m256i forwardShifts = _mm256_loadu_si256(
                     reinterpret_cast<const __m256i*>(transitions.forwardShift.data() + output));
-                const __m256i backwardShifts = _mm256_load_si256(
+                const __m256i backwardShifts = _mm256_loadu_si256(
                     reinterpret_cast<const __m256i*>(transitions.backwardShift.data() + output));
 
                 __m256i forwardValues = _mm256_i32gather_epi32(base, forwardIndices, 1);
@@ -462,34 +467,35 @@ namespace slr{
         /** Returns the cached packed variant-specific state used before message absorption. */
         template<size_t... X>
         const PackedHashState<X...>& initialPackedHashState() {
-            static const PackedHashState<X...> initial = [] {
-                PackedHashState<X...> state{};
+            static const std::unique_ptr<const PackedHashState<X...>> initial = [] {
+                auto state = std::make_unique<PackedHashState<X...>>();
                 std::stringstream name;
                 name << std::hex;
                 using ilst = int[];
                 (void) ilst{0, ((void) (name << X << ','), 0)...};
                 name << VariantSize<X...>::value;
                 const std::string seed = name.str();
-                absorbPackedHash<X...>(seed.size(), seed.data(), state);
+                absorbPackedHash<X...>(seed.size(), seed.data(), *state);
                 return state;
             }();
-            return initial;
+            return *initial;
         }
 
         /** Returns the cached bitset form of the variant-specific initial state. */
         template<size_t... X>
         const std::bitset<VariantSize<X...>::value8>& initialHashState() {
-            static const std::bitset<VariantSize<X...>::value8> initial = [] {
-                std::bitset<VariantSize<X...>::value8> state;
+            using State = std::bitset<VariantSize<X...>::value8>;
+            static const std::unique_ptr<const State> initial = [] {
+                auto state = std::make_unique<State>();
                 const auto& packed = initialPackedHashState<X...>();
                 for(size_t byte = 0; byte < VariantSize<X...>::value; ++byte) {
                     for(size_t bit = 0; bit < 8; ++bit) {
-                        state[byte * 8 + bit] = (packed[byte] >> bit) & 1U;
+                        (*state)[byte * 8 + bit] = (packed[byte] >> bit) & 1U;
                     }
                 }
                 return state;
             }();
-            return initial;
+            return *initial;
         }
 
         /**

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required (VERSION 3.12)
-project(shuffle VERSION 0.0.4)
+project(shuffle VERSION 0.0.5)
 include(CTest)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
