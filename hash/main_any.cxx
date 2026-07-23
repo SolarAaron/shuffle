@@ -1,13 +1,16 @@
-#include "crypto_c.h"
+// SPDX-FileCopyrightText: 2024-2026 Aaron Torres
+// SPDX-License-Identifier: MIT
+
+#include "slr.crypto.hpp"
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <string>
 
 int main(int argc, char** argv){
-	std::string buf;
 	int current = 1;
 	do {
+		std::string buf;
 		std::istreambuf_iterator<char> eos;
 		std::istreambuf_iterator<char> iit;
 		std::string arg;
@@ -22,13 +25,13 @@ int main(int argc, char** argv){
 			arg = argv[current];
 		}
 
-        poker_hash_sum const * const hash = init_poker_hash(HASH_SIGNATURE)();
+        auto* hash = slr::crypto::hashBlock<HASH_DEFINITION>(0, nullptr);
 
         while(iit != eos){
             buf+=*iit++;
 
             if(buf.size() >= 100){
-                hash_block(HASH_SIGNATURE)(hash, buf.c_str(), buf.size(), 0);
+                slr::crypto::hashBlock<HASH_DEFINITION>(buf.size(), buf.data(), hash);
                 buf.clear();
             }
         }
@@ -37,11 +40,10 @@ int main(int argc, char** argv){
             file.close();
         }
 
-		hash_block(HASH_SIGNATURE)(hash, buf.c_str(), buf.size(), 0);
-		char * hexHash = new char[get_hash_size(HASH_SIGNATURE)(hash)]();
-		finish_hash(HASH_SIGNATURE)(hash, hexHash, 0);
+		slr::crypto::hashBlock<HASH_DEFINITION>(buf.size(), buf.data(), hash);
+		const std::string hexHash = slr::crypto::finishHash(hash);
+		delete hash;
 		std::cout << hexHash << "  " << arg << std::endl;
-		delete[] hexHash;
 		
 		current ++;
 	} while(current < argc);

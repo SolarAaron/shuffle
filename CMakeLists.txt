@@ -1,6 +1,10 @@
+# SPDX-FileCopyrightText: 2024-2026 Aaron Torres
+# SPDX-License-Identifier: MIT
+
 cmake_minimum_required (VERSION 3.12)
-project(shuffle VERSION 0.0.3)
-set(CMAKE_CXX_STANDARD 17)
+project(shuffle VERSION 0.0.4)
+include(CTest)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (WIN32)
     option(BUILD_STATIC_LIBS "Build the static library" ON)
@@ -11,7 +15,8 @@ else ()
 endif ()
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
-install(FILES include/crypto_c.h include/slr.crypto.hpp DESTINATION include)
+install(FILES include/crypto_c.h include/crypto_ct.h include/slr.crypto.hpp DESTINATION include)
+install(FILES LICENSE DESTINATION share/licenses/${PROJECT_NAME})
 
 set(CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}/build)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
@@ -22,6 +27,17 @@ endif ()
 if (NOT DEFINED DEPTH)
     list(APPEND DEPTH 1 2)
 endif ()
+set(TRUNCATION_MULTIPLIERS "5;6;7" CACHE STRING
+    "Positive poker truncation multipliers for hash, shuffle, and tests")
+foreach(TRUNCATION_MULTIPLIER ${TRUNCATION_MULTIPLIERS})
+    if(NOT TRUNCATION_MULTIPLIER MATCHES "^[1-9][0-9]*$")
+        message(FATAL_ERROR
+            "TRUNCATION_MULTIPLIERS values must be positive integers")
+    elseif(TRUNCATION_MULTIPLIER GREATER 8)
+        message(WARNING
+            "Truncation multiplier ${TRUNCATION_MULTIPLIER} exceeds the full hash width multiplier 8; wrapped output may decrease hash strength")
+    endif()
+endforeach()
 
 foreach(PRIME ${PRIMES})
     foreach (ITER ${DEPTH})
@@ -47,5 +63,9 @@ list(SORT VARIANTS ORDER DESCENDING COMPARE NATURAL)
 
 set(BLOCK_SIZES 8 16 32 64 128 256 512)
 
-add_subdirectory(hash)
 add_subdirectory(encrypt)
+add_subdirectory(hash)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

@@ -2,6 +2,9 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+// SPDX-FileCopyrightText: 2024-2026 Aaron Torres
+// SPDX-License-Identifier: MIT
+
 #include "slr.crypto.hpp"
 
 int main(int argc, char** argv){
