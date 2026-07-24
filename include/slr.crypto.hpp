@@ -173,8 +173,8 @@ namespace slr{
          */
         template<size_t... X>
         const std::vector<size_t>& bitwisePermutation() {
-            constexpr size_t bitCount = VariantSize<X...>::value8;
             static const std::vector<size_t> permutation = [] {
+                constexpr size_t bitCount = VariantSize<X...>::value8;
                 std::vector<size_t> encoded(bitCount);
                 std::array<std::bitset<bitCount>, 1> source{};
 
@@ -216,10 +216,10 @@ namespace slr{
         /** @internal Precomputes the composed permutation/shift/permutation hash mappings. */
         template<size_t... X>
         const HashTransitions& hashTransitions() {
-            constexpr size_t bitCount = VariantSize<X...>::value8;
             static_assert(VariantSize<X...>::value + 1 <= static_cast<size_t>(UINT32_MAX),
                           "hash state is too large for transition byte indices");
             static const HashTransitions transitions = [] {
+                constexpr size_t bitCount = VariantSize<X...>::value8;
                 HashTransitions result{std::vector<HashBitSource>(bitCount),
                                        std::vector<HashBitSource>(bitCount)};
                 const auto& permutation = bitwisePermutation<X...>();
@@ -254,8 +254,8 @@ namespace slr{
 
         template<size_t... X>
         const HashVectorTransitions& hashVectorTransitions() {
-            constexpr size_t bitCount = VariantSize<X...>::value8;
             static const HashVectorTransitions transitions = [] {
+                constexpr size_t bitCount = VariantSize<X...>::value8;
                 HashVectorTransitions result{std::vector<uint32_t>(bitCount),
                                              std::vector<uint32_t>(bitCount),
                                              std::vector<uint32_t>(bitCount),
