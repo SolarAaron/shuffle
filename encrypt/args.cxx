@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024-2026 Aaron Torres
+// SPDX-License-Identifier: MIT
+
 #include "args.hpp"
 
 Args& Args::parse(int argc, char** argv){

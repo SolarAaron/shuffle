@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024-2026 Aaron Torres
+// SPDX-License-Identifier: MIT
+
 #include "crypto_c.h"
 #include <fstream>
 #include <iostream>
@@ -5,9 +8,9 @@
 #include <string>
 
 int main(int argc, char** argv){
-	std::string buf;
 	int current = 1;
 	do {
+		std::string buf;
 		std::istreambuf_iterator<char> eos;
 		std::istreambuf_iterator<char> iit;
 		std::string arg;
